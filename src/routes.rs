@@ -21,8 +21,9 @@ struct WebSocketMessage {
     deployment_type: String,
     deployment_model: String,
     max_similar_search: usize,
-    upper_chunks: i32,
-    lower_chunks: i32,
+    upper_chunk: i32,
+    lower_chunk: i32,
+    minimum_score: f32,
 }
 
 pub async fn home() -> Result<impl warp::Reply, warp::Rejection> {
@@ -47,7 +48,7 @@ pub async fn handle_upload(
 
     while let Ok(Some(part)) = parts.try_next().await {
         if part.name() == "files" {
-            let filename = part.filename().unwrap_or("unknown");
+            let filename: &str = part.filename().unwrap_or("unknown");
             let filepath = format!("upload_path/{filename}");
 
             let mut file = File::create(&filepath)
@@ -183,8 +184,9 @@ pub async fn client_connection(ws: warp::ws::WebSocket) {
                                 &socket_message.table_name,
                                 &socket_message.sentence.trim(),
                                 socket_message.max_similar_search,
-                                socket_message.lower_chunks,
-                                socket_message.upper_chunks,
+                                socket_message.lower_chunk,
+                                socket_message.upper_chunk,
+                                socket_message.minimum_score,
                             )
                             .await
                         {
@@ -200,6 +202,7 @@ pub async fn client_connection(ws: warp::ws::WebSocket) {
                                 .await;
                         }
                     } else {
+                        println!("{:?}", serde_json::from_str::<WebSocketMessage>(str_msg));
                         let _ = tx
                             .send(warp::ws::Message::text("Cannot Parse the Input"))
                             .await;

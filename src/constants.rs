@@ -43,9 +43,9 @@ pub fn insert_raw_content_sql(table_name: &str) -> String {
     format!("INSERT INTO {table_name}_content (content_id, title, text, metadata) VALUES ($1, $2, $3, $4::jsonb)")
 }
 
-pub fn get_similar_result_query(table_name: &str, limit: usize) -> String {
+pub fn get_similar_result_query(table_name: &str, limit: usize, minimum_score: f32) -> String {
     format!(
-        "SELECT * FROM {table_name} ORDER BY embedding <-> $1 LIMIT {}",
+        "SELECT *, (1.0-(embedding <=> $1::vector)) as score FROM {table_name} WHERE (1.0-(embedding <=> $1::vector)) >={minimum_score} ORDER BY score DESC LIMIT {}",
         limit
     )
 }

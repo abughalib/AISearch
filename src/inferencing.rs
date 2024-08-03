@@ -30,7 +30,7 @@ lazy_static! {
 const EMBEDDING_DIMENSION: usize = 1024;
 
 pub fn load_model() -> Result<(QMixFormer, Tokenizer)> {
-    let quantized_path = vars::infer_model_path();
+    let quantized_path = vars::get_inferencing_model_path();
 
     let tokerizer_file = quantized_path.join("tokenizer.json");
 
@@ -294,6 +294,8 @@ impl ModelQuery {
                     "The query doesn't match any refences",
                 ))
                 .await?;
+
+            return Ok(());
         }
 
         match deployment_type {
@@ -375,13 +377,19 @@ impl ModelQuery {
         max_similar_res: usize,
         lower_chunk: i32,
         upper_chunk: i32,
+        minimum_score: f32,
     ) -> Result<Vec<EmbeddingVectorValue>> {
         let embeddings: Vec<f32> = embedding::get_embeddings(&query)?
             .reshape((EMBEDDING_DIMENSION,))?
             .to_vec1()?;
 
-        let references =
-            database::get_similar_results(table_name, embeddings.into(), max_similar_res).await?;
+        let references = database::get_similar_results(
+            table_name,
+            embeddings.into(),
+            max_similar_res,
+            minimum_score,
+        )
+        .await?;
 
         let mut final_ref: Vec<EmbeddingVectorValue> = Vec::with_capacity(references.len());
 
@@ -405,6 +413,7 @@ impl ModelQuery {
                 embedding: reference.embedding.clone(),
                 metadata: reference.metadata.clone(),
                 create_at: reference.create_at,
+                score: reference.score,
             });
         }
 

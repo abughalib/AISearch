@@ -5,6 +5,8 @@ const INFERENCING_MODEL_PATH: &'static str = "PHI2_QUANTIZED_PATH";
 const EMBEDDING_MODEL_PATH: &'static str = "EMBEDDING_MODEL_PATH";
 const GENAI_DB_URL: &'static str = "GENAI_DB_URL";
 const AZURE_AI_KEY: &'static str = "AZURE_OPENAI_KEY";
+const ST_EMBEDDING_MODEL_PATH: &'static str = "ST_EMBEDDING_MODEL_PATH";
+const ST_INFERENCING_MODEL_PATH: &'static str = "SAFETENSOR_MODEL_DIR";
 
 pub fn get_inferencing_model_path() -> PathBuf {
     if let Ok(path) = env::var(&INFERENCING_MODEL_PATH) {
@@ -35,23 +37,22 @@ pub fn get_embedding_model_path() -> PathBuf {
     panic!("{EMBEDDING_MODEL_PATH} not set in environment variables")
 }
 
-
 pub fn safetensor_embedding_model_path() -> PathBuf {
-    match env::var("ST_EMBEDDING_MODEL_PATH") {
+    match env::var(ST_EMBEDDING_MODEL_PATH) {
         Ok(res) => return path_exists(&res),
         Err(e) => {
-            panic!("Set ST_EMBEDDING_MODEL_PATH environment variable: {e}")
+            panic!("Set {ST_EMBEDDING_MODEL_PATH} environment variable: {e}")
         }
     }
 }
 
 pub fn safetensor_model_path() -> PathBuf {
-    match env::var("SAFETENSOR_MODEL_DIR") {
+    match env::var(ST_INFERENCING_MODEL_PATH) {
         Ok(res) => {
             return path_exists(&res);
         }
         Err(e) => {
-            panic!("Set SAFETENSOR_MODEL_DIR environment variable: {e}")
+            panic!("Set {ST_INFERENCING_MODEL_PATH} environment variable: {e}")
         }
     }
 }
@@ -64,15 +65,4 @@ pub fn path_exists(dir: &String) -> PathBuf {
     }
 
     panic!("Dir: {:?} doesn't exists", dir);
-}
-
-pub fn infer_model_path() -> PathBuf {
-    match env::var("QUANTIZED_MODEL_DIR") {
-        Ok(res) => {
-            return path_exists(&res);
-        }
-        Err(e) => {
-            panic!("Set QUANTIZED_MODEL_DIR environment variable: {e}")
-        }
-    }
 }

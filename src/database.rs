@@ -49,6 +49,7 @@ pub struct EmbeddingVectorValue {
     pub embedding: Vector,
     pub metadata: Value,
     pub create_at: NaiveDateTime,
+    pub score: f64,
 }
 
 impl EmbeddingVectorValue {
@@ -197,6 +198,7 @@ pub async fn insert_vector_index_pg(
         metadata,
         embedding: vector.into(),
         create_at: NaiveDateTime::default(),
+        score: 0.0,
     };
 
     insert_into(table_name, values).await?;
@@ -325,11 +327,13 @@ pub async fn get_similar_results(
     table_name: &str,
     query: Vector,
     max_similar_res: usize,
+    minimum_score: f32,
 ) -> Result<Vec<EmbeddingVectorValue>> {
     if let Ok(pool) = POOL.get().await {
         let res = sqlx::query_as::<_, EmbeddingVectorValue>(&get_similar_result_query(
             table_name,
             max_similar_res,
+            minimum_score,
         ))
         .bind(query)
         .fetch_all(pool)
