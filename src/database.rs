@@ -1,3 +1,4 @@
+use crate::constants::*;
 use crate::embedding::get_embeddings;
 use crate::vars::get_pgurl;
 use anyhow::{Error, Result};
@@ -11,27 +12,32 @@ use sqlx::Row;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use uuid::Uuid;
 
-const SEARCH_TABLES: &'static str = "search_tables";
-const EMBEDDING_DIMENSION: usize = 1024;
-const MAX_POOL_CONNECTION: u32 = 20;
-
 lazy_static! {
-    static ref POOL: AsyncOnce<Result<PgPool>> = AsyncOnce::new(async {
-        let pool = PgPoolOptions::new()
-            .max_connections(MAX_POOL_CONNECTION)
-            .connect(&get_pgurl())
-            .await?;
+    static ref POOL: AsyncOnce<Result<PgPool>> =
+        AsyncOnce::new(async { create_connection().await });
+}
 
-        sqlx::query("CREATE EXTENSION IF NOT EXISTS vector")
-            .execute(&pool)
-            .await?;
+async fn create_connection() -> Result<PgPool> {
+    match PgPoolOptions::new()
+        .max_connections(MAX_POOL_CONNECTION)
+        .connect(&get_pgurl())
+        .await
+    {
+        Ok(pool) => {
+            sqlx::query(CREATE_VECTOR_SQL).execute(&pool).await?;
 
-        sqlx::query("CREATE TABLE IF NOT EXISTS {SEARCH_TABLES} (id bigserial PRIMARY KEY, table_name TEXT UNIQUE)")
-        .execute(&pool)
-        .await?;
+            sqlx::query(&create_search_base_sql())
+                .execute(&pool)
+                .await?;
 
-        Ok(pool)
-    });
+            return Ok(pool);
+        }
+        Err(e) => {
+            println!("{:?}", e);
+
+            return Err(e.into());
+        }
+    };
 }
 
 #[derive(sqlx::FromRow, Clone)]
@@ -57,13 +63,12 @@ impl EmbeddingVectorValue {
                 upper = self.chunk_number;
             }
 
-            let result = sqlx::query_as::<_, EmbeddingVectorValue>(&format!(
-                "SELECT * FROM {table_name} WHERE content_id = $1 AND chunk_number >= $2 AND chunk_number <= $3 ORDER BY chunk_number ASC"
-            )).bind(&self.content_id)
-            .bind(self.chunk_number - upper)
-            .bind(self.chunk_number + lower)
-            .fetch_all(pool)
-            .await?;
+            let result = sqlx::query_as::<_, EmbeddingVectorValue>(&get_adj_chunk_sql(table_name))
+                .bind(&self.content_id)
+                .bind(self.chunk_number - upper)
+                .bind(self.chunk_number + lower)
+                .fetch_all(pool)
+                .await?;
 
             return Ok(result);
         }
@@ -80,20 +85,18 @@ pub struct RowContent {
 
 pub async fn create_table(table_name: &str) -> Result<()> {
     if let Ok(pool) = POOL.get().await {
-        sqlx::query(
-            &format!("CREATE TABLE IF NOT EXISTS {table_name} (id bigserial PRIMARY KEY, content_id TEXT, content_chunk TEXT, chunk_number int, embedding vector({EMBEDDING_DIMENSION}), metadata JSON, created_at timestamp)")
-        ).execute(pool).await?;
+        sqlx::query(&create_vector_table_sql(table_name))
+            .execute(pool)
+            .await?;
 
-        sqlx::query(
-            &format!("CREATE TABLE IF NOT EXISTS {table_name}_content (id bigserial PRIMARY KEY, content_id TEXT, title TEXT, text TEXT, metadata JSON)")
-        ).execute(pool).await?;
+        sqlx::query(&create_raw_content_table_sql(table_name))
+            .execute(pool)
+            .await?;
 
-        let _ = sqlx::query(&format!(
-            "INSERT INTO {SEARCH_TABLES} (table_name) VALUES ($1)"
-        ))
-        .bind(table_name)
-        .execute(pool)
-        .await;
+        let _ = sqlx::query(&insert_into_search_table_sql())
+            .bind(table_name)
+            .execute(pool)
+            .await;
 
         return Ok(());
     }
@@ -103,14 +106,15 @@ pub async fn create_table(table_name: &str) -> Result<()> {
 
 async fn insert_into(table_name: &str, values: EmbeddingVectorValue) -> Result<()> {
     if let Ok(pool) = POOL.get().await {
-        sqlx::query(&format!("INSERT INTO {table_name} (content_id, content_chunk, chunk_number, embedding, metadata, created_at) VALUES ($1, $2, $3, $4, $5::jsonb, $6)"))
-        .bind(values.content_id)
-        .bind(values.content_chunk)
-        .bind(values.chunk_number)
-        .bind(values.embedding)
-        .bind(values.metadata)
-        .bind(values.create_at)
-        .execute(pool).await?;
+        sqlx::query(&insert_into_vector_table_sql(table_name))
+            .bind(values.content_id)
+            .bind(values.content_chunk)
+            .bind(values.chunk_number)
+            .bind(values.embedding)
+            .bind(values.metadata)
+            .bind(values.create_at)
+            .execute(pool)
+            .await?;
 
         return Ok(());
     }
@@ -127,13 +131,8 @@ async fn builk_insert_into(
     metadatas: Vec<Value>,
     created_ats: Vec<NaiveDateTime>,
 ) -> Result<()> {
-    let query_str = format!("
-        INSERT INTO {table_name}(content_id, content_chunk, chunk_number, embedding, metadata, created_at)
-        SELECT * FROM UNNEST($1::text[], $2::text[], $3::int4[], $4::vector[], $5::jsonb[], $6::timestamp[])
-    ");
-
     if let Ok(pool) = POOL.get().await {
-        sqlx::query(&query_str)
+        sqlx::query(&bulk_insert_into_vector_table_sql(table_name))
             .bind(content_ids)
             .bind(content_chunks)
             .bind(chunk_numbers)
@@ -156,12 +155,13 @@ async fn insert_content_into(
     metadata: Value,
 ) -> Result<()> {
     if let Ok(pool) = POOL.get().await {
-        sqlx::query(&format!("INSERT INTO {table_name}_content (content_id, title, text, metadata) VALUES ($1, $2, $3, $4::jsonb)"))
-        .bind(content_id)
-        .bind(title)
-        .bind(text)
-        .bind(metadata)
-        .execute(pool).await?;
+        sqlx::query(&insert_raw_content_sql(table_name))
+            .bind(content_id)
+            .bind(title)
+            .bind(text)
+            .bind(metadata)
+            .execute(pool)
+            .await?;
 
         return Ok(());
     }
@@ -327,9 +327,9 @@ pub async fn get_similar_results(
     max_similar_res: usize,
 ) -> Result<Vec<EmbeddingVectorValue>> {
     if let Ok(pool) = POOL.get().await {
-        let res = sqlx::query_as::<_, EmbeddingVectorValue>(&format!(
-            "SELECT * FROM {table_name} ORDER BY embedding <-> $1 LIMIT {}",
-            max_similar_res
+        let res = sqlx::query_as::<_, EmbeddingVectorValue>(&get_similar_result_query(
+            table_name,
+            max_similar_res,
         ))
         .bind(query)
         .fetch_all(pool)
@@ -343,9 +343,9 @@ pub async fn get_similar_results(
 
 pub async fn list_search_tables() -> Result<Vec<String>> {
     if let Ok(pool) = POOL.get().await {
-        let query: &str = &format!("SELECT table_name FROM {SEARCH_TABLES}");
+        let query: String = get_search_tables_sql();
 
-        let mut rows = sqlx::query(query).fetch(pool);
+        let mut rows = sqlx::query(&query).fetch(pool);
 
         let mut table_names: Vec<String> = Vec::new();
 
@@ -362,19 +362,17 @@ pub async fn list_search_tables() -> Result<Vec<String>> {
 
 pub async fn delete_table(table_name: &str) -> Result<()> {
     if let Ok(pool) = POOL.get().await {
-        sqlx::query(&format!("DROP TABLE IF EXISTS {table_name}"))
+        sqlx::query(&get_drop_table_sql(table_name.to_owned()))
             .execute(pool)
             .await?;
 
-        sqlx::query(&format!("DROP TABLE IF EXISTS {table_name}_content"))
+        sqlx::query(&get_drop_table_sql(table_name.to_owned() + &"_content"))
             .execute(pool)
             .await?;
 
-        sqlx::query(&format!(
-            "DELETE FROM {SEARCH_TABLES} WHERE table_name = '{table_name}'"
-        ))
-        .execute(pool)
-        .await?;
+        sqlx::query(&get_delete_from_search_table_sql(table_name))
+            .execute(pool)
+            .await?;
 
         return Ok(());
     }

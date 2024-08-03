@@ -4,6 +4,7 @@ pub mod azureai;
 pub mod database;
 pub mod embedding;
 pub mod inferencing;
+pub mod constants;
 pub mod routes;
 pub mod upload;
 pub mod utils;
