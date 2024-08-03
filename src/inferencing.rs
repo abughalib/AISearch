@@ -2,10 +2,8 @@ use core::fmt;
 use std::collections::HashMap;
 
 use crate::azureai::AzureAI;
-use crate::database;
 use crate::database::EmbeddingVectorValue;
-use crate::embedding;
-use crate::utils;
+use crate::{database, embedding, utils, vars};
 use anyhow::{Error as E, Result};
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
@@ -32,7 +30,7 @@ lazy_static! {
 const EMBEDDING_DIMENSION: usize = 1024;
 
 pub fn load_model() -> Result<(QMixFormer, Tokenizer)> {
-    let quantized_path = utils::infer_model_path();
+    let quantized_path = vars::infer_model_path();
 
     let tokerizer_file = quantized_path.join("tokenizer.json");
 

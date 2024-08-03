@@ -34,3 +34,45 @@ pub fn get_embedding_model_path() -> PathBuf {
     };
     panic!("{EMBEDDING_MODEL_PATH} not set in environment variables")
 }
+
+
+pub fn safetensor_embedding_model_path() -> PathBuf {
+    match env::var("ST_EMBEDDING_MODEL_PATH") {
+        Ok(res) => return path_exists(&res),
+        Err(e) => {
+            panic!("Set ST_EMBEDDING_MODEL_PATH environment variable: {e}")
+        }
+    }
+}
+
+pub fn safetensor_model_path() -> PathBuf {
+    match env::var("SAFETENSOR_MODEL_DIR") {
+        Ok(res) => {
+            return path_exists(&res);
+        }
+        Err(e) => {
+            panic!("Set SAFETENSOR_MODEL_DIR environment variable: {e}")
+        }
+    }
+}
+
+pub fn path_exists(dir: &String) -> PathBuf {
+    let dir = PathBuf::from(dir);
+
+    if dir.exists() {
+        return dir;
+    }
+
+    panic!("Dir: {:?} doesn't exists", dir);
+}
+
+pub fn infer_model_path() -> PathBuf {
+    match env::var("QUANTIZED_MODEL_DIR") {
+        Ok(res) => {
+            return path_exists(&res);
+        }
+        Err(e) => {
+            panic!("Set QUANTIZED_MODEL_DIR environment variable: {e}")
+        }
+    }
+}
