@@ -66,6 +66,7 @@ export HOST_PORT="8000" # Replace it with yours
   - Deployment Model: PHI2/PHI3/GPT-4o ...
   - Max Similar Search: The number of maximum similar searches to get from DB.
   - Upper Chunks & Lower Chunks: Maximum row content to get from the search line.
+  - minimum_score: Minimum matching score for prompt with similar result.
 
   ```bash
   ./websocat http://$HOST_IP:$HOST_PORT/ws/ -d '{
@@ -76,7 +77,8 @@ export HOST_PORT="8000" # Replace it with yours
     "deployment_model": "your_deployment_model",
     "max_similar_search": 10,
     "upper_chunks": 5,
-    "lower_chunks": 3
+    "lower_chunks": 3,
+    "minimum_score": 0.6
   }'
   ```
 
