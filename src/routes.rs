@@ -10,6 +10,7 @@ use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+use tokio::task;
 use warp::http::Response;
 use warp::Buf;
 
@@ -86,9 +87,15 @@ pub async fn handle_upload(
     if let Some(table_name) = table_name {
         for file_name in file_paths {
             if file_name.ends_with("txt") {
-                let _ = learn_from_text(&table_name, &PathBuf::from(file_name)).await;
+                let table_name_clone = table_name.clone();
+                task::spawn(async move {
+                    let _ = learn_from_text(&table_name_clone, &PathBuf::from(file_name)).await;
+                });
             } else if file_name.ends_with("pdf") {
-                let _ = learn_from_pdf(&table_name, &PathBuf::from(file_name)).await;
+                let table_name_clone = table_name.clone();
+                task::spawn(async move {
+                    let _ = learn_from_pdf(&table_name_clone, &PathBuf::from(file_name)).await;
+                });
             } else {
                 println!("File type not supported: {file_name}");
             }
@@ -96,7 +103,7 @@ pub async fn handle_upload(
     }
 
     Ok(warp::reply::with_status(
-        "Files Uploaded Successfully",
+        "File is Processing",
         warp::http::StatusCode::OK,
     ))
 }

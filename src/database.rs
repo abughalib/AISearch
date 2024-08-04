@@ -148,6 +148,14 @@ async fn builk_insert_into(
     Ok(())
 }
 
+fn adjust_to_char_boundary(s: &str, idx: usize) -> usize {
+    if s.is_char_boundary(idx) {
+        idx
+    } else {
+        s.char_indices().find(|&(i, _)| i > idx).map(|(i, _)| i).unwrap_or(s.len())
+    }
+}
+
 async fn insert_content_into(
     table_name: &str,
     content_id: &str,
@@ -247,7 +255,7 @@ pub async fn insert_split_chunks(
     Ok(())
 }
 
-pub async fn builk_insert_split_chunks(
+pub async fn bulk_insert_split_chunks(
     table_name: &str,
     title: &str,
     text: &str,
@@ -257,20 +265,30 @@ pub async fn builk_insert_split_chunks(
 
     insert_content_into(table_name, &content_id, title, text, metadata.clone()).await?;
 
-    let mut chunks = text.split("\n").collect::<Vec<&str>>();
-    chunks.retain(|c| !c.is_empty());
-
     let overlap_size: usize = 150;
+    let chunk_size: usize = 1000;
 
     let mut position = 0;
     let mut chunks_with_overlap = Vec::new();
 
     while position < text.len() {
-        let end = std::cmp::min(position + 1000, text.len());
+        let end = text.char_indices()
+            .skip(position)
+            .take(chunk_size)
+            .last()
+            .map(|(i, _)| i)
+            .unwrap_or(text.len());
+
         let mut chunk = &text[position..end];
 
         if end != text.len() {
-            let overlap_end = std::cmp::min(end + overlap_size, text.len());
+            let overlap_end = text.char_indices()
+                .skip(end)
+                .take(overlap_size)
+                .last()
+                .map(|(i, _)| i)
+                .unwrap_or(text.len());
+
             chunk = &text[position..overlap_end];
 
             position = overlap_end - overlap_size;
@@ -278,7 +296,7 @@ pub async fn builk_insert_split_chunks(
             position = end;
         }
 
-        chunks_with_overlap.push(chunk);
+        chunks_with_overlap.push(chunk.to_string());
     }
 
     let mut content_ids: Vec<String> = Vec::new();

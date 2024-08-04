@@ -19,6 +19,7 @@ dependencies = [
  "pdf-extract",
  "pgvector",
  "rand",
+ "rayon",
  "regex",
  "reqwest 0.12.5",
  "serde",

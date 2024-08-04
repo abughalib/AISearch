@@ -1,4 +1,4 @@
-use crate::database::builk_insert_split_chunks;
+use crate::database::bulk_insert_split_chunks;
 use anyhow::{Context, Error, Result};
 use chrono::Utc;
 use serde_json::json;
@@ -27,7 +27,7 @@ pub async fn learn_from_pdf(table_name: &str, file_path: &PathBuf) -> Result<()>
 
     println!("Processing PDF File Name: {file_name}");
 
-    builk_insert_split_chunks(
+    bulk_insert_split_chunks(
         table_name,
         file_name,
         &extracted_file,
@@ -66,7 +66,7 @@ pub async fn learn_from_text(table_name: &str, file_path: &PathBuf) -> Result<()
         contents.push('\n');
     }
 
-    builk_insert_split_chunks(
+    bulk_insert_split_chunks(
         table_name,
         file_name,
         &contents,
