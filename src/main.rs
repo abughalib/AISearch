@@ -1,12 +1,14 @@
 use anyhow::Result;
 
 pub mod azureai;
+pub mod constants;
 pub mod database;
+pub mod documents;
 pub mod embedding;
 pub mod inferencing;
-pub mod documents;
-pub mod constants;
 pub mod routes;
+pub mod tests;
+pub mod text_splitter;
 pub mod upload;
 pub mod utils;
 pub mod vars;
