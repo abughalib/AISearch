@@ -1,5 +1,6 @@
 use anyhow::Result;
 
+pub mod azure;
 pub mod azureai;
 pub mod constants;
 pub mod database;
