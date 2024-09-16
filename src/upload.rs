@@ -1,4 +1,4 @@
-use crate::database::bulk_insert_split_chunks;
+use crate::local::database::bulk_insert_split_chunks;
 use anyhow::{Context, Error, Result};
 use chrono::Utc;
 use serde_json::json;

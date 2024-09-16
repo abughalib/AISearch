@@ -1,5 +1,5 @@
 use crate::constants::*;
-use crate::embedding::get_embeddings;
+use crate::local::embedding::get_embeddings;
 use crate::text_splitter::TextSplitter;
 use crate::vars::get_pgurl;
 use anyhow::{Error, Result};

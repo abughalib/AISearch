@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
-use crate::database;
-use crate::inferencing;
+use crate::local::database;
+use crate::local::inferencing;
 use crate::upload::{learn_from_pdf, learn_from_text};
 
 use futures::SinkExt;

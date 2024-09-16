@@ -3,16 +3,15 @@ use anyhow::Result;
 pub mod azure;
 pub mod azureai;
 pub mod constants;
-pub mod database;
 pub mod documents;
-pub mod embedding;
-pub mod inferencing;
 pub mod routes;
 pub mod tests;
 pub mod text_splitter;
 pub mod upload;
 pub mod utils;
 pub mod vars;
+pub mod tools;
+pub mod local;
 
 use tracing::Level;
 use warp;

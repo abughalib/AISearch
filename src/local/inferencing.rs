@@ -2,8 +2,9 @@ use core::fmt;
 use std::collections::HashMap;
 
 use crate::azureai::AzureAI;
-use crate::database::EmbeddingVectorValue;
-use crate::{database, embedding, utils, vars};
+use crate::local::database::EmbeddingVectorValue;
+use crate::local::{database, embedding};
+use crate::{vars, utils};
 use anyhow::{Error as E, Result};
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
