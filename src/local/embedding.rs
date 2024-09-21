@@ -1,6 +1,6 @@
-use crate::utils;
-use crate::utils::get_device;
-use crate::vars;
+use crate::utils::utils;
+use crate::utils::utils::get_device;
+use crate::utils::vars;
 use anyhow::{Context, Error, Result};
 use candle_core::Tensor;
 use candle_nn::VarBuilder;

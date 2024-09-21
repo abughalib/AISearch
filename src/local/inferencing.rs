@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use crate::azureai::AzureAI;
 use crate::local::database::EmbeddingVectorValue;
 use crate::local::{database, embedding};
-use crate::{vars, utils};
+use crate::{utils::vars, utils};
 use anyhow::{Error as E, Result};
 use async_openai::types::{
     ChatCompletionRequestAssistantMessageArgs, ChatCompletionRequestMessage,
@@ -44,7 +44,7 @@ pub fn load_model() -> Result<(QMixFormer, Tokenizer)> {
 
     let vb = candle_transformers::quantized_var_builder::VarBuilder::from_gguf(
         &weights_filename,
-        &utils::get_device(),
+        &utils::utils::get_device(),
     )?;
 
     let model = QMixFormer::new_v2(&config, vb).map_err(E::msg)?;
@@ -75,7 +75,7 @@ impl TextGeneration {
         let logits_processor = LogitsProcessor::new(seed, temp, top_p);
         Self {
             model,
-            device: utils::get_device(),
+            device: utils::utils::get_device(),
             tokenizer,
             logits_processor,
             repeat_penalty,

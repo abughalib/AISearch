@@ -1,7 +1,7 @@
-use crate::constants::*;
+use crate::utils::constants::*;
 use crate::local::embedding::get_embeddings;
-use crate::text_splitter::TextSplitter;
-use crate::vars::get_pgurl;
+use crate::utils::text_splitter::TextSplitter;
+use crate::utils::vars::get_pgurl;
 use anyhow::{Error, Result};
 use async_once::AsyncOnce;
 use chrono::NaiveDateTime;

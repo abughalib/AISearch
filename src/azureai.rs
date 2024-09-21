@@ -1,4 +1,4 @@
-use crate::vars;
+use crate::utils::vars;
 use anyhow::Result;
 use async_openai::types::ChatCompletionRequestMessage;
 use async_openai::{config::AzureConfig, types::CreateChatCompletionRequestArgs, Client};

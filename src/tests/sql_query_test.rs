@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod sql_query_test {
-    use crate::constants::*;
+    use crate::utils::constants::*;
     pub const TABLE_NAME: &'static str = "test_table";
 
     #[test]

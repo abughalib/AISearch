@@ -66,3 +66,13 @@ pub fn path_exists(dir: &String) -> PathBuf {
 
     panic!("Dir: {:?} doesn't exists", dir);
 }
+
+pub fn get_app_config_path() -> PathBuf {
+    let path = PathBuf::from(
+        env::var("APP_CONFIG_PATH").expect("APP_CONFIG_PATH not set in environment variables"),
+    );
+    if path.exists() {
+        return path;
+    }
+    panic!("Dir: {:?} doesn't exists", path);
+}

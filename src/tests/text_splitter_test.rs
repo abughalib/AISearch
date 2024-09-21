@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod text_splitter_text {
-    use crate::text_splitter::TextSplitter;
+    use crate::utils::text_splitter::TextSplitter;
     #[test]
     fn test_split_20_5() {
         let some_long_text: String = "A story about a boy".to_string();

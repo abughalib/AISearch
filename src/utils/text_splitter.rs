@@ -29,7 +29,6 @@ impl TextSplitter {
     }
 
     pub fn with_chunk_overlap(mut self, chunk_overlap: usize) -> Self {
-
         if chunk_overlap >= self.chunk_size && chunk_overlap < 10 {
             // To avoid infinite loops
             panic!("Chunk overlap must be smaller than chunk size");
@@ -43,26 +42,27 @@ impl TextSplitter {
         self
     }
 
+    /// Only use ASCII characters text for splitting
     pub fn split(&self, text: &str) -> Vec<String> {
         let mut chunks = Vec::new();
         let mut start = 0;
-    
+
         // Ensure chunk size is larger than overlap
         if self.chunk_size <= self.chunk_overlap {
             panic!("Chunk size must be larger than chunk overlap");
         }
-    
+
         while start < text.len() {
             // Determine the end of the current chunk
             let mut end = std::cmp::min(start + self.chunk_size, text.len());
-    
+
             // Adjust the end to avoid splitting in the middle of a word
             if end < text.len() {
                 if let Some(last_space) = text[start..end].rfind(' ') {
                     end = start + last_space;
                 }
             }
-    
+
             // Add the chunk, avoiding unnecessary allocations
             let chunk = &text[start..end];
             let chunk = if start == 0 && end >= text.len() {
@@ -73,36 +73,37 @@ impl TextSplitter {
             if !chunk.is_empty() {
                 chunks.push(chunk.to_string());
             }
-    
+
             // Break if we're at the end of the text
             if end >= text.len() {
                 break;
             }
-    
+
             // Move the start index to the next chunk, taking overlap into account
             let new_start = end.saturating_sub(self.chunk_overlap);
-    
+
             // Adjust the start to avoid splitting in the middle of a word
             let mut adjusted_start = new_start;
-            if adjusted_start < text.len() && !text.as_bytes()[adjusted_start].is_ascii_whitespace() {
+            if adjusted_start < text.len() && !text.as_bytes()[adjusted_start].is_ascii_whitespace()
+            {
                 adjusted_start = self.find_nearest_space_to_left(text, adjusted_start);
             }
-    
+
             // Ensure that the start index always moves forward
             if adjusted_start <= start {
                 start = end; // Move start to the end of the last chunk if no forward movement
             } else {
                 start = adjusted_start;
             }
-    
+
             // Safety check to avoid infinite loops
             if start >= text.len() {
                 break;
             }
         }
-    
+
         chunks
-    }    
+    }
 
     fn find_nearest_space_to_left(&self, text: &str, index: usize) -> usize {
         if index == 0 {
