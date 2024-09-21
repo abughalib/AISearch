@@ -1,5 +1,5 @@
-use crate::utils::constants::*;
 use crate::local::embedding::get_embeddings;
+use crate::utils::constants::*;
 use crate::utils::text_splitter::TextSplitter;
 use crate::utils::vars::get_pgurl;
 use anyhow::{Error, Result};
@@ -222,7 +222,7 @@ pub async fn insert_split_chunks(
     let chunks_with_overlap = text_splitter
         .with_chunk_size(1000)
         .with_chunk_overlap(150)
-        .split(text); 
+        .split(text);
 
     for (i, chunk) in chunks_with_overlap.clone().into_iter().enumerate() {
         insert_vector_index_pg(table_name, &content_id, i as i32, &chunk, metadata.clone()).await?;
@@ -378,4 +378,38 @@ pub async fn delete_table(table_name: &str) -> Result<()> {
     }
 
     return Err(Error::msg("DB Connection Initialization Failed."));
+}
+
+pub async fn get_similar_search(
+    table_name: &str,
+    max_similar_res: usize,
+    lower_chunk: i32,
+    upper_chunk: i32,
+    minimum_score: f32,
+    embedding: Vector,
+) -> Result<Vec<Value>> {
+    let references: Vec<EmbeddingVectorValue> =
+        get_similar_results(table_name, embedding, max_similar_res, minimum_score).await?;
+
+    let mut final_ref: Vec<Value> = Vec::new();
+
+    for reference in references.iter() {
+        let related = reference
+            .get_adjacent_chunks(table_name, upper_chunk, lower_chunk)
+            .await?;
+
+        let mut chunks: String = String::new();
+
+        for r in related.iter() {
+            chunks += &r.content_chunk;
+            chunks.push(' ');
+        }
+
+        final_ref.push(serde_json::json!({
+            "content": reference.content_chunk,
+            "metadata": reference.metadata
+        }))
+    }
+
+    Ok(final_ref)
 }
