@@ -49,7 +49,7 @@ pub struct EmbeddingVectorValue {
     pub chunk_number: i32,
     pub embedding: Vector,
     pub metadata: Value,
-    pub create_at: NaiveDateTime,
+    pub created_at: NaiveDateTime,
     pub score: f64,
 }
 
@@ -65,14 +65,18 @@ impl EmbeddingVectorValue {
                 upper = self.chunk_number;
             }
 
-            let result = sqlx::query_as::<_, EmbeddingVectorValue>(&get_adj_chunk_sql(table_name))
+            match sqlx::query_as::<_, EmbeddingVectorValue>(&get_adj_chunk_sql(table_name))
                 .bind(&self.content_id)
                 .bind(self.chunk_number - upper)
                 .bind(self.chunk_number + lower)
                 .fetch_all(pool)
-                .await?;
-
-            return Ok(result);
+                .await
+            {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    panic!("Error Occured: {:?}", e);
+                }
+            };
         }
         return Err(Error::msg("DB Connection Initialization Failed."));
     }
@@ -114,7 +118,7 @@ async fn insert_into(table_name: &str, values: EmbeddingVectorValue) -> Result<(
             .bind(values.chunk_number)
             .bind(values.embedding)
             .bind(values.metadata)
-            .bind(values.create_at)
+            .bind(values.created_at)
             .execute(pool)
             .await?;
 
@@ -198,7 +202,7 @@ pub async fn insert_vector_index_pg(
         chunk_number,
         metadata,
         embedding: vector.into(),
-        create_at: NaiveDateTime::default(),
+        created_at: NaiveDateTime::default(),
         score: 0.0,
     };
 
@@ -326,16 +330,22 @@ pub async fn get_similar_results(
     minimum_score: f32,
 ) -> Result<Vec<EmbeddingVectorValue>> {
     if let Ok(pool) = POOL.get().await {
-        let res = sqlx::query_as::<_, EmbeddingVectorValue>(&get_similar_result_query(
+        match sqlx::query_as::<_, EmbeddingVectorValue>(&get_similar_result_query(
             table_name,
             max_similar_res,
             minimum_score,
         ))
         .bind(query)
         .fetch_all(pool)
-        .await?;
-
-        return Ok(res);
+        .await
+        {
+            Ok(result) => {
+                return Ok(result);
+            }
+            Err(e) => {
+                panic!("{:?}", e);
+            }
+        }
     }
 
     return Err(Error::msg("DB Connection Intialization Failed."));

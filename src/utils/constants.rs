@@ -12,7 +12,7 @@ pub fn create_search_base_sql() -> String {
 
 pub fn get_adj_chunk_sql(table_name: &str) -> String {
     format!(
-        "SELECT * FROM {table_name} WHERE content_id = $1 AND chunk_number >= $2 AND chunk_number <= $3 ORDER BY chunk_number ASC"
+        "SELECT *, CAST(0 AS FLOAT8) as score FROM {table_name} WHERE content_id = $1 AND chunk_number >= $2 AND chunk_number <= $3 ORDER BY chunk_number ASC"
     )
 }
 
