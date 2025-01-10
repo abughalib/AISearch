@@ -413,7 +413,7 @@ impl ModelQuery {
                 chunk_number: reference.chunk_number,
                 embedding: reference.embedding.clone(),
                 metadata: reference.metadata.clone(),
-                create_at: reference.create_at,
+                created_at: reference.created_at,
                 score: reference.score,
             });
         }
