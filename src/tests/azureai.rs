@@ -12,7 +12,7 @@ mod azure_embedding_test {
             .with_embedding_model("text-embedding-ada-002");
 
         let embedding = azure_embedding
-            .generate_embeddings("Some test string")
+            .generate_embedding("Some test string")
             .await
             .unwrap();
 

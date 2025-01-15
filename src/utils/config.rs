@@ -10,6 +10,7 @@ pub struct AppConfig<'a> {
     pub web_config: WebSettings<'a>,
     pub azure_config_llm_inferencing: AzureConfigLLMInferencing<'a>,
     pub azure_config_slm_inferencing: AzureConfigSLMInferencing<'a>,
+    pub azure_embedding_config: AzureEmbeddingConfig<'a>,
     pub local_embedding_config: LocalEmbeddingConfig<'a>,
     pub database_config: DatabaseConfig,
 }
@@ -132,6 +133,13 @@ impl<'a> AppConfig<'a> {
             local_embedding_config: LocalEmbeddingConfig {
                 embedding_model: Cow::Borrowed("BAAI_V1.5L"),
                 dimension: 1024,
+            },
+            azure_embedding_config: AzureEmbeddingConfig {
+                resource_name: Cow::Borrowed("openai"),
+                api_version: Cow::Borrowed("2022-12-01"),
+                deployment_id: Cow::Borrowed("text-embedding-ada-002"),
+                embedding_model: Cow::Borrowed("text-embedding-ada-002"),
+                dimension: None,
             },
             database_config: DatabaseConfig {
                 search_type: SearchType::SemanticSearch,
