@@ -11,6 +11,7 @@ pub struct AppConfig<'a> {
     pub azure_config_llm_inferencing: AzureConfigLLMInferencing<'a>,
     pub azure_config_slm_inferencing: AzureConfigSLMInferencing<'a>,
     pub local_embedding_config: LocalEmbeddingConfig<'a>,
+    pub database_config: DatabaseConfig,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -57,6 +58,53 @@ pub struct LocalEmbeddingConfig<'a> {
     pub dimension: usize,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct DatabaseConfig {
+    pub search_type: SearchType,
+}
+
+#[derive(Debug, Deserialize)]
+pub enum SearchType {
+    #[serde(rename = "semantic_search")]
+    SemanticSearch,
+    #[serde(rename = "keyword_search")]
+    KeyWordSearch,
+    #[serde(rename = "hybrid_search")]
+    HybridSearch,
+}
+
+impl ToString for SearchType {
+    fn to_string(&self) -> String {
+        match self {
+            SearchType::SemanticSearch => "semantic_search".to_string(),
+            SearchType::KeyWordSearch => "keyword_search".to_string(),
+            SearchType::HybridSearch => "hybrid_search".to_string(),
+        }
+    }
+}
+
+impl Serialize for SearchType {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl std::str::FromStr for SearchType {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "semantic_search" => Ok(SearchType::SemanticSearch),
+            "keyword_search" => Ok(SearchType::KeyWordSearch),
+            "hybrid_search" => Ok(SearchType::HybridSearch),
+            _ => Err(format!("Invalid search type: {}", s)),
+        }
+    }
+}
+
 impl<'a> AppConfig<'a> {
     pub fn default() -> Self {
         Self {
@@ -84,6 +132,9 @@ impl<'a> AppConfig<'a> {
             local_embedding_config: LocalEmbeddingConfig {
                 embedding_model: Cow::Borrowed("BAAI_V1.5L"),
                 dimension: 1024,
+            },
+            database_config: DatabaseConfig {
+                search_type: SearchType::SemanticSearch,
             },
         }
     }
